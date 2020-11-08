@@ -3,20 +3,20 @@
 bool dmDao::insertDao(QString tableName,QString columnList, QString paramList){
     QStringList list1 = columnList.split(",");
     QStringList list2 = paramList.split(",");
-    QVector<QVector<QString>> map;
+    QVector<field> map;
     QMap<QString,QString> row;
     //读取表文件获取表字段
     Table t(tableName);
     map =  t.getHead();
     if(map.isEmpty())
-        qDebug()<<tableName;
+     qDebug()<<tableName;
     //遍历比较字段与列参数表
     for(int j=0;j<list1.size();j++){
         for(int i=0;i<map.size();i++){
-            if(map[i].contains(list1.at(j))){
+            if(map[i].get_name()==list1.at(j)){
                 row.insert(list1.at(j),list2.at(j));
             }
-        }
+        } 
     }
     if(t.InsertData(row))
     return true;
@@ -71,4 +71,8 @@ bool dmDao::updateDao(QString tableName, QQueue<QString> condtion){
         }
      }
      return false;
+}
+Table dmDao::selectDao(QString tableName, QString columnList, QQueue<QString> condtion){
+    Table t(tableName);
+    return t.SelectData(columnList,condtion);
 }

@@ -67,6 +67,11 @@ bool DataManage::Parse(QString sql){
             ui->outputText->append("出现语法错误");
         }
     }
+    else if(tem=="select"){
+        if(!Select("test")){
+            ui->outputText->append("出现语法错误");
+        }
+    }
     else{
         ui->outputText->append("出现语法错误");
     }
@@ -129,5 +134,30 @@ bool DataManage::Update(QString database){
     return false;
 }
 
-
+bool DataManage::Select(QString database){
+    QString tableName;
+    QString columnList;
+    Table t;
+    columnList = queue.dequeue();
+    if(queue.dequeue()=="from"){
+        tableName=queue.dequeue();
+        t = dao.selectDao(tableName,columnList,queue);
+        QString row;
+        for(int i=0;i<t.getHead().size();i++){
+            row.append(t.getHead()[i].get_name());
+            row.append(",");
+        }
+        ui->outputText->append(row);
+        row.clear();
+        for(int i=0;i<t.getData().size();i++){
+            for(int j = 0;j<t.getData().at(i).size();j++){
+                row.append(t.getData()[i][j]);
+                row.append(",");
+            }
+            ui->outputText->append(row);
+            row.clear();
+        }
+    }
+    return true;
+}
 

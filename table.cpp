@@ -1,5 +1,9 @@
 #include <table.h>
 
+Table::Table(){
+
+}
+
 Table::Table(QString tableName){
     this->tableName=tableName;
     readHead();
@@ -12,18 +16,15 @@ bool Table::readHead(){
     if(!f.open(QIODevice::ReadOnly|QIODevice::Text)){
         return false;
     }
-    QVector<QString> row;
-    //记录列名
+    //记录字段属性
     while(!f.atEnd()){
         QByteArray line = f.readLine();
         QString str(line);
         QStringList list = str.split(",");
-        for(int i=0;i<list.size();i++){
-            if(list.at(i)!="\n")
-            row.append(list.at(i));
-        }
+        field row;
+        row.set_name(list.at(0));
+        row.set_dataType(list.at(1));
         head.append(row);
-        row.clear();
     }
     f.close();
 }
@@ -46,7 +47,7 @@ bool Table::readData(){
     }
     f.close();
 }
-QVector<QVector<QString>> Table::getHead(){
+QVector<field> Table::getHead(){
     return head;
 }
 QVector<QVector<QString>> Table::getData(){
@@ -79,8 +80,8 @@ bool Table::InsertData(QMap<QString,QString> row){
    QString oneRow;
    QTextStream out(&f);
    for(int i=0;i<head.size();i++){
-       if(row.contains(head.at(i).at(0))){
-           oneRow.append(row.find(head.at(i).at(0)).value());
+       if(row.contains(head[i].get_name())){
+           oneRow.append(row.find(head[i].get_name()).value());
        }
        oneRow.append(",");
    }
@@ -88,13 +89,7 @@ bool Table::InsertData(QMap<QString,QString> row){
    f.close();
 }
 int Table::FindData(QString column, QString judge, QString condtion){
-    int order = -1;
-    for(int i=0;i<head.size();i++){
-        if(head.at(i).at(0)==column){
-            order=i;
-            break;
-        }
-    }
+    int order =getFieldIndex(column);
     if(order==-1){
         return false;
     }
@@ -134,13 +129,7 @@ int Table::FindData(QString column, QString judge, QString condtion){
 }
 QVector<int> Table::FindAllData(QString column, QString judge, QString condtion){
     QVector<int> all;
-    int order = -1;
-    for(int i=0;i<head.size();i++){
-        if(head.at(i).at(0)==column){
-            order=i;
-            break;
-        }
-    }
+    int order = getFieldIndex(column);
     if(order==-1){
         return all;
     }
@@ -194,16 +183,63 @@ bool Table::DeleteAllData(){
    return true;
 }
 bool Table::UpdateOneData(int id, QString column, QString value){
-    int order = -1;
-    for(int i=0;i<head.size();i++){
-        if(head.at(i).at(0)==column){
-            order=i;
-            break;
-        }
-    }
+    int order = getFieldIndex(column);
     if(order==-1){
         return false;
     }
     data[id][order]=value;
     return true;
+}
+Table Table::SelectData(QString columnList, QQueue<QString> condtion){
+    Table t;
+    QStringList list = columnList.split(",");
+    for(int i=0;i<list.size();i++){
+        field row;
+        row.set_name(list.at(i));
+        row.set_dataType(getFieldType(list.at(i)));
+        t.head.append(row);
+    }
+    if(!condtion.isEmpty()){
+        if(condtion.dequeue()=="where"){
+            QString column = condtion.dequeue();
+            QString judge = condtion.dequeue();
+            QString cond = condtion.dequeue();
+            QVector<int> temp = FindAllData(column,judge,cond);
+            for(int i=0;i<temp.size();i++){
+                QVector<QString> row;
+                for(int j=0;j<list.size();j++){
+                    row.append(data.at(temp.at(i)).at(getFieldIndex(list.at(j))));
+                }
+                t.data.append(row);
+            }
+            return t;
+        }
+    }
+    else{
+        for(int i=0;i<data.size();i++){
+             QVector<QString> row;
+            for(int j=0;j<list.size();j++){
+                row.append(data.at(i).at(getFieldIndex(list.at(j))));
+            }
+            t.data.append(row);
+        }
+        return t;
+    }
+    return t;
+}
+int Table::getFieldIndex(QString name){
+    for(int i=0;i<head.size();i++){
+        if(head[i].get_name()==name){
+            return i;
+        }
+    }
+    return -1;
+}
+QString Table::getFieldType(QString name){
+    for(int i=0;i<head.size();i++){
+        if(head[i].get_name()==name){
+            return head[i].get_dataType();
+        }
+    }
+    return "";
 }
