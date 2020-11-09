@@ -18,7 +18,7 @@ const int inf = 0x3f3f3f3f;
 struct Tables {
 	string name;
 	string pathName;
-	vector<string>colName;//������
+	vector<string>colName;//列名称
 	vector<string>type;
 	vector<int>size;
 	FILE* fp;
@@ -29,19 +29,19 @@ class myDBMS {
 	bool open;
 public:
 	string cmd;
-	string prePath;//���ݿ���ļ�·��
+	string prePath;//数据库的文件路径
 
 	myDBMS() {
 		cmd = "";
 		prePath = "";
 		open = false;
-		//����ɾ��
-		cout << "�밴���¹��������������(����ִ�Сд)" << endl;
-		cout << "�½����ݿ�: create database ���ݿ�����" << endl;
-		cout << "ɾ�����ݿ�: drop database ���ݿ�����" << endl;
-		cout << "�����ݿ�: open database ���ݿ�����" << endl;
-		cout << "�ر����ݿ�: close database ���ݿ�����" << endl;
-		cout << "�˳�����  : exit" << endl;
+		//建库删库
+		cout << "请按以下规则输入命令语句(命令不分大小写)" << endl;
+		cout << "新建数据库: create database 数据库名字" << endl;
+		cout << "删除数据库: drop database 数据库名字" << endl;
+		cout << "打开数据库: open database 数据库名字" << endl;
+		cout << "关闭数据库: close database 数据库名字" << endl;
+		cout << "退出程序  : exit" << endl;
 	}
 	~myDBMS() {
 		for (int i = 0; i < tab.size(); i++) {
@@ -54,14 +54,14 @@ public:
 		prePath = "";
 	}
 
-	void transfer();//תΪСд
-	void openDataBase(string);//�����ݿ�
-	void closeDataBase();//�ر����ݿ�
-	void myCreateDataBase(string); //�������ݿ�	
-	void myDropDataBase(string); //ɾ�����ݿ�	
+	void transfer();//转为小写
+	void openDataBase(string);//打开数据库
+	void closeDataBase();//关闭数据库
+	void myCreateDataBase(string); //建立数据库	
+	void myDropDataBase(string); //删除数据库	
 
 
-	int posIsNos(string);//��������
+	int posIsNos(string);//辅助函数
 };
 
 void myDBMS::transfer() {
@@ -71,19 +71,19 @@ void myDBMS::transfer() {
 
 void myDBMS::openDataBase(string dataBaseName) {
 	if (open) {
-		cout << "���ȹرյ�ǰ�򿪵����ݿ�" << endl;
+		cout << "请先关闭当前打开的数据库" << endl;
 		return;
 	}
 	string pathName = "D:\\test\\" + dataBaseName;
-	if (0 != access(pathName.c_str(), 0))printf("�����ݿⲻ����");
+	if (0 != access(pathName.c_str(), 0))printf("该数据库不存在");
 	else {
 		prePath = pathName + "\\";
-		cout << "�����ݿ�ɹ�" << endl;
+		cout << "打开数据库成功" << endl;
 		open = true;
 	}
 }
 
-void myDBMS::closeDataBase() {//������������ͬ
+void myDBMS::closeDataBase() {//和析构函数相同
 	for (int i = 0; i < tab.size(); i++) {
 		if (tab[i]->fp != NULL)
 			fclose(tab[i]->fp);
@@ -96,29 +96,29 @@ void myDBMS::closeDataBase() {//������������ͬ
 }
 
 //D:\\test
-void myDBMS::myCreateDataBase(string dataBaseName) {//�������ݿ�
+void myDBMS::myCreateDataBase(string dataBaseName) {//建立数据库
 	string pathName = "D:\\test\\" + dataBaseName;
 	if (0 != access(pathName.c_str(), 0)) {
-		if (0 == mkdir(pathName.c_str()))//����0��ʾ�����ɹ�,-1��ʾʧ��
-			cout << "�����ɹ�" << endl;
+		if (0 == mkdir(pathName.c_str()))//返回0表示创建成功,-1表示失败
+			cout << "创建成功" << endl;
 		else
-			cout << "����ʧ��" << endl;
+			cout << "创建失败" << endl;
 		return;
 	}
-	cout << "�����ݿ��Ѵ���" << endl;
+	cout << "该数据库已存在" << endl;
 }
 
-void myDBMS::myDropDataBase(string dataBaseName) {//ɾ�����ݿ�
+void myDBMS::myDropDataBase(string dataBaseName) {//删除数据库
 	string pathName = "D:\\test\\" + dataBaseName;
 	if (0 == access(pathName.c_str(), 0)) {
 		pathName = "rd " + pathName;
 		if (0 == system(pathName.c_str()))
-			cout << "ɾ�����ݿ�" << dataBaseName << "�ɹ�" << endl;
+			cout << "删除数据库" << dataBaseName << "成功" << endl;
 		else
-			cout << "ɾ�����ݿ�" << dataBaseName << "ʧ��" << endl;
+			cout << "删除数据库" << dataBaseName << "失败" << endl;
 		return;
 	}
-	cout << "���ݿ�" << dataBaseName << "������" << endl;
+	cout << "数据库" << dataBaseName << "不存在" << endl;
 }
 
 int main(void) {
@@ -134,7 +134,7 @@ int main(void) {
 			//cout << "db.cmd:" << db.cmd << " name:" << name << endl;
 			if (db.cmd == "database")
 				db.myCreateDataBase(name);
-			else cout << "�����������!" << endl;
+			else cout << "命令语句有误!" << endl;
 		}
 		else if (db.cmd == "drop") {
 			string name;
@@ -142,7 +142,7 @@ int main(void) {
 			db.transfer();
 			if (db.cmd == "database")
 				db.myDropDataBase(name);
-			else cout << "�����������!" << endl;
+			else cout << "命令语句有误!" << endl;
 		}
 		else if (db.cmd == "open") {
 			string name;
@@ -155,14 +155,13 @@ int main(void) {
 			db.transfer();
 			if (db.cmd == "database")
 				db.closeDataBase();
-			else cout << "�����������!" << endl;
+			else cout << "命令语句有误!" << endl;
 		}
 		else {
 			string tmp;
 			getline(cin, tmp);
-			cout << "�����������,����!" << endl;
+			cout << "输入命令错误,请检查!" << endl;
 		}
 	}
 	return 0;
 }
-
