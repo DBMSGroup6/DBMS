@@ -11,7 +11,12 @@
 #include <QStandardItemModel>
 #include <table.h>
 #include <field.h>
-
+#include <qtextcodec.h>
+#include <QTextCodec>
+#include <QPushButton>
+#include <QMenu>
+#include <QMessageBox>
+#include <QCloseEvent>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -39,9 +44,14 @@ private slots:
 
     void on_clearbutton_clicked();
 
-    void on_readtable_triggered();
+    void on_readtable_triggered(QString);
+
+    void on_readdb_triggered();
+
+    void on_treeWidget_itemSelectionChanged();
 
 private:
     Ui::MainWindow *ui;
+    QString filename;
 };
 #endif // MAINWINDOW_H

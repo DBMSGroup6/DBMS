@@ -25,19 +25,9 @@
     </property>
     <column>
      <property name="text">
-      <string>mywork</string>
+      <string>DB List</string>
      </property>
     </column>
-    <item>
-     <property name="text">
-      <string>table1</string>
-     </property>
-    </item>
-    <item>
-     <property name="text">
-      <string>table2</string>
-     </property>
-    </item>
    </widget>
    <widget class="QTextEdit" name="textEdit">
     <property name="geometry">
@@ -164,6 +154,7 @@ p, li { white-space: pre-wrap; }
     <addaction name="findtable"/>
     <addaction name="findfield"/>
     <addaction name="readtable"/>
+    <addaction name="readdb"/>
    </widget>
    <widget class="QMenu" name="menu_7">
     <property name="title">
@@ -286,6 +277,11 @@ p, li { white-space: pre-wrap; }
   <action name="updatedate">
    <property name="text">
     <string>修改记录</string>
+   </property>
+  </action>
+  <action name="readdb">
+   <property name="text">
+    <string>查看数据库</string>
    </property>
   </action>
  </widget>
