@@ -13,8 +13,10 @@ public:
     Table(QString tableName);
     bool readHead();
     bool readData();
+    void setData(QVector<QVector<QString>> newData);
     bool UpdateAllData();
     bool UpdateOneData(int id,QString column,QString value);
+    bool JudgeOneData(int id,QStringList judgeList);
     int FindData(QString column,QString judge,QString condtion);
     QVector<int> FindAllData(QString column,QString judge,QString condtion);
     bool DeleteData(int i);
@@ -25,11 +27,16 @@ public:
     QVector<QVector<QString>> getData();
     QString getFieldType(QString name);
     int getFieldIndex(QString name);
+    Table Cartesian(Table t);
+    QString getTableName();
+    bool isWrong();
+    void setWrong(bool wrong);
 protected:
 private:
     QString tableName;
     QVector<QVector<QString>> data;
     QVector<field> head;
+    bool Wrong = false;
 };
 
 #endif // TABLE_H

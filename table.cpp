@@ -6,8 +6,15 @@ Table::Table(){
 
 Table::Table(QString tableName){
     this->tableName=tableName;
-    readHead();
-    readData();
+    if(!readHead()||!readData()){
+        Wrong=true;
+    }
+}
+bool Table::isWrong(){
+    return Wrong;
+}
+void Table::setWrong(bool wrong){
+    this->Wrong=wrong;
 }
 
 bool Table::readHead(){
@@ -28,10 +35,15 @@ bool Table::readHead(){
     }
     f.close();
 }
+void Table::setData(QVector<QVector<QString> > newData){
+    this->data=newData;
+}
+
 bool Table::readData(){
     //读取数据文件
     QFile f("data/"+tableName+".txt");
     if(!f.open(QIODevice::ReadOnly|QIODevice::Text)){
+        qDebug()<<"error";
         return false;
     }
     while(!f.atEnd()){
@@ -61,13 +73,11 @@ bool Table::UpdateAllData(){
    }
    QTextStream out(&f);
    QString oneRow;
-   qDebug()<<data.size();
    for(int i=0;i<data.size();i++){
        for(int j=0;j<data.at(i).size();j++){
            oneRow.append(data.at(i).at(j));
            oneRow.append(",");
        }
-       qDebug()<<oneRow;
        out<<oneRow<<endl;
        oneRow.clear();
    }
@@ -88,6 +98,7 @@ bool Table::InsertData(QMap<QString,QString> row){
    out<<oneRow<<endl;
    f.close();
 }
+
 int Table::FindData(QString column, QString judge, QString condtion){
     int order =getFieldIndex(column);
     if(order==-1){
@@ -192,13 +203,33 @@ bool Table::UpdateOneData(int id, QString column, QString value){
 }
 Table Table::SelectData(QString columnList, QQueue<QString> condtion){
     Table t;
-    QStringList list = columnList.split(",");
-    for(int i=0;i<list.size();i++){
-        field row;
-        row.set_name(list.at(i));
-        row.set_dataType(getFieldType(list.at(i)));
-        t.head.append(row);
+    if(columnList=="*"){
+        for(int i=0;i<head.size();i++){
+            field row;
+            row.set_name(head[i].get_name());
+            row.set_dataType(head[i].get_dataType());
+            t.head.append(row);
+        }
     }
+    else if(!columnList.isEmpty()){
+        QStringList list = columnList.split(",");
+        for(int i=0;i<list.size();i++){
+            field row;
+            //存在未知字段
+            if(getFieldIndex(list.at(i))==-1){
+                t.setWrong(true);
+                return t;
+            }
+            row.set_name(list.at(i));
+            row.set_dataType(getFieldType(list.at(i)));
+            t.head.append(row);
+        }
+    }
+    else{
+        t.setWrong(true);
+        return t;
+    }
+
     if(!condtion.isEmpty()){
         if(condtion.dequeue()=="where"){
             QString column = condtion.dequeue();
@@ -207,8 +238,8 @@ Table Table::SelectData(QString columnList, QQueue<QString> condtion){
             QVector<int> temp = FindAllData(column,judge,cond);
             for(int i=0;i<temp.size();i++){
                 QVector<QString> row;
-                for(int j=0;j<list.size();j++){
-                    row.append(data.at(temp.at(i)).at(getFieldIndex(list.at(j))));
+                for(int j=0;j<t.head.size();j++){
+                    row.append(data.at(temp.at(i)).at(getFieldIndex(t.head[j].get_name())));
                 }
                 t.data.append(row);
             }
@@ -218,13 +249,14 @@ Table Table::SelectData(QString columnList, QQueue<QString> condtion){
     else{
         for(int i=0;i<data.size();i++){
              QVector<QString> row;
-            for(int j=0;j<list.size();j++){
-                row.append(data.at(i).at(getFieldIndex(list.at(j))));
+            for(int j=0;j<t.head.size();j++){
+                row.append(data.at(i).at(getFieldIndex(t.head[j].get_name())));
             }
             t.data.append(row);
         }
         return t;
     }
+    t.setWrong(true);
     return t;
 }
 int Table::getFieldIndex(QString name){
@@ -242,4 +274,46 @@ QString Table::getFieldType(QString name){
         }
     }
     return "";
+}
+//得到两个表的笛卡尔积
+Table Table::Cartesian(Table t){
+    Table newT;
+    QString sameFieldName;
+    int id=-1;
+    //添加字段
+    for(int i=0;i<t.getHead().size();i++){
+        id = getFieldIndex(t.getHead()[i].get_name());
+        //具有相同字段时加前缀 table.field
+        if(id!=-1){
+            sameFieldName = head[id].get_name();
+            QString newName;
+            newName.append(t.getTableName());
+            newName.append(".");
+            newName.append(sameFieldName);
+            t.getHead()[i].set_name(newName);
+            newName.clear();
+            newName.append(head[id].get_name());
+            newName.append(".");
+            newName.append(sameFieldName);
+            head[id].set_name(tableName+head[id].get_name());
+        }
+        newT.getHead().append(t.getHead()[i]);
+    }
+    //添加字段
+    for(int i=0;i<getHead().size();i++){
+      newT.getHead().append(getHead()[i]);
+    }
+    //添加数据
+    for(int i=0;i<t.getData().size();i++){
+        for(int j=0;j<getData().size();j++){
+            QVector<QString> row;
+            row.append(t.getData()[i]);
+            row.append(getData()[j]);
+            newT.getData().append(row);
+        }
+    }
+    return newT;
+}
+QString Table::getTableName(){
+    return tableName;
 }

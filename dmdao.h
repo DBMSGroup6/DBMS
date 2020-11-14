@@ -4,14 +4,18 @@
 #include<QVector>
 #include<QQueue>
 #include<QMap>
-#include <table.h>
+#include<table.h>
+#include<QRegularExpression>
+#include<QRegularExpressionMatch>
 #include<qDebug>
+#include<set>
+#include<algorithm>
 class dmDao{
 public:
-    bool insertDao(QString tableName,QString columnList,QString paramList);
-    bool deleteDao(QString tableName,QQueue<QString> condtion);
-    bool updateDao(QString tableName,QQueue<QString> condtion);
-    Table selectDao(QString tableName,QString columnList,QQueue<QString> condtion);
+    bool insertDao(QString tableName,QStringList columnList,QStringList paramList);
+    bool deleteDao(QString tableName,QStringList judgeList);
+    bool updateDao(QString tableName,QString column,QString value,QStringList judgeList);
+    Table selectDao(QString tableName,QString columnList,QStringList judgeList);
 };
 
 #endif // DMDAO_H

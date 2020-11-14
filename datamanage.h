@@ -6,6 +6,8 @@
 #include <QQueue>
 #include <dmdao.h>
 #include <QMap>
+#include <QRegularExpression>
+#include <QRegularExpressionMatch>
 namespace Ui {
 class DataManage;
 }
@@ -18,11 +20,12 @@ public:
     explicit DataManage(QWidget *parent = 0);
     ~DataManage();
     void init();
-    bool Select(QString database);
-    bool Insert(QString database);
-    bool Delete(QString database);
-    bool Update(QString database);
+    bool Select(QString database,QString sql);
+    bool Insert(QString database,QString sql);
+    bool Delete(QString database,QString sql);
+    bool Update(QString database,QString sql);
     bool Parse(QString sql);//解析
+    QString match(QString sql);
     void Exec();//执行
 private slots:
     void on_pushButton_clicked();
