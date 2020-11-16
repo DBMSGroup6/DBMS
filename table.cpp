@@ -7,26 +7,21 @@ Table::Table(){
 Table::Table(QString tableName){
     this->tableName=tableName;
     if(!readHead()||!readData()){
-        Wrong=true;
+       throw QString("表"+tableName+"不存在或存在异常");
     }
 }
-bool Table::isWrong(){
-    return Wrong;
-}
-void Table::setWrong(bool wrong){
-    this->Wrong=wrong;
-}
-
 bool Table::readHead(){
     //读取字段文件
     QFile f("table/"+tableName+".txt");
     if(!f.open(QIODevice::ReadOnly|QIODevice::Text)){
+        throw QString("表"+tableName+"字段文件无法打开");
         return false;
     }
     //记录字段属性
     while(!f.atEnd()){
         QByteArray line = f.readLine();
         QString str(line);
+        str = str.simplified();
         QStringList list = str.split(",");
         field row;
         row.set_name(list.at(0));
@@ -38,21 +33,23 @@ bool Table::readHead(){
 void Table::setData(QVector<QVector<QString> > newData){
     this->data=newData;
 }
-
+void Table::setHead(QVector<field > newHead){
+    this->head=newHead;
+}
 bool Table::readData(){
     //读取数据文件
     QFile f("data/"+tableName+".txt");
     if(!f.open(QIODevice::ReadOnly|QIODevice::Text)){
-        qDebug()<<"error";
+        throw QString("表"+tableName+"数据文件无法打开");
         return false;
     }
     while(!f.atEnd()){
         QVector<QString> row;
         QByteArray line = f.readLine();
         QString str(line);
+        str = str.simplified();
         QStringList list = str.split(",");
         for(int i=0;i<list.size();i++){
-            if(list.at(i)!="\n")
             row.append(list.at(i));
         }
         data.append(row);
@@ -69,6 +66,7 @@ bool Table::UpdateAllData(){
     //打开数据文件
     QFile f("data/"+tableName+".txt");
    if(!f.open(QIODevice::WriteOnly|QIODevice::Text)){
+       throw QString("表"+tableName+"数据文件无法打开");
        return false;
    }
    QTextStream out(&f);
@@ -85,6 +83,7 @@ bool Table::UpdateAllData(){
 bool Table::InsertData(QMap<QString,QString> row){
     QFile f("data/"+tableName+".txt");
    if(!f.open(QIODevice::ReadWrite | QIODevice::Append)){
+       throw QString("表"+tableName+"数据文件无法打开");
        return false;
    }
    QString oneRow;
@@ -99,52 +98,20 @@ bool Table::InsertData(QMap<QString,QString> row){
    f.close();
 }
 
-int Table::FindData(QString column, QString judge, QString condtion){
-    int order =getFieldIndex(column);
-    if(order==-1){
-        return false;
-    }
-    for(int j=0;j<data.size();j++){
-        if(judge==">="){
-            if(data.at(j).at(order)>=condtion){
-                return j;
-            }
-        }
-        if(judge=="<="){
-            if(data.at(j).at(order)<=condtion){
-                return j;
-            }
-        }
-        if(judge=="!="){
-            if(data.at(j).at(order)!=condtion){
-                return j;
-            }
-        }
-        if(judge==">"){
-            if(data.at(j).at(order)>condtion){
-                return j;
-            }
-        }
-        if(judge=="<"){
-            if(data.at(j).at(order)<condtion){
-                return j;
-            }
-        }
-        if(judge=="="){
-            if(data.at(j).at(order)==condtion){
-                return j;
-            }
-        }
-    }
-    return -1;
-}
 QVector<int> Table::FindAllData(QString column, QString judge, QString condtion){
     QVector<int> all;
     int order = getFieldIndex(column);
     if(order==-1){
-        return all;
+        throw QString("未知的字段"+column);
     }
+    qDebug()<<condtion;
+    int order2 = getFieldIndex(condtion);
+    qDebug()<<"order2:"<<order2;
     for(int j=0;j<data.size();j++){
+        if(order2!=-1){
+            condtion = data.at(j).at(order2);
+//            qDebug()<<"111:"<<condtion;
+        }
         if(judge==">="){
             if(data.at(j).at(order)>=condtion){
                 all.append(j);
@@ -179,15 +146,11 @@ QVector<int> Table::FindAllData(QString column, QString judge, QString condtion)
     return all;
 }
 
-bool Table::DeleteData(int i){
-    data.removeAt(i);
-    return true;
-}
-
 bool Table::DeleteAllData(){
     //打开数据文件
     QFile f("data/"+tableName+".txt");
    if(!f.open(QIODevice::WriteOnly|QIODevice::Text)){
+       throw QString("表"+tableName+"数据文件无法打开");
        return false;
    }
    f.close();
@@ -196,68 +159,92 @@ bool Table::DeleteAllData(){
 bool Table::UpdateOneData(int id, QString column, QString value){
     int order = getFieldIndex(column);
     if(order==-1){
+        throw QString("未知的字段"+column);
         return false;
     }
     data[id][order]=value;
     return true;
 }
-Table Table::SelectData(QString columnList, QQueue<QString> condtion){
+Table Table::SelectData(QStringList columnList,QStringList groupList,QStringList orderList){
     Table t;
-    if(columnList=="*"){
-        for(int i=0;i<head.size();i++){
+    //全参
+    if(columnList[0]=="*"){
+        for(int i=0;i<getHead().size();i++){
             field row;
-            row.set_name(head[i].get_name());
-            row.set_dataType(head[i].get_dataType());
+            row.set_name(getHead()[i].get_name());
+            row.set_dataType(getHead()[i].get_dataType());
             t.head.append(row);
         }
     }
-    else if(!columnList.isEmpty()){
-        QStringList list = columnList.split(",");
-        for(int i=0;i<list.size();i++){
+    //部分参
+    else{
+        for(int i=0;i<columnList.size();i++){
             field row;
             //存在未知字段
-            if(getFieldIndex(list.at(i))==-1){
-                t.setWrong(true);
-                return t;
+            if(getFieldIndex(columnList.at(i))==-1){
+                throw QString("存在未知字段"+columnList.at(i));
             }
-            row.set_name(list.at(i));
-            row.set_dataType(getFieldType(list.at(i)));
+            row.set_name(columnList.at(i));
+            row.set_dataType(getFieldType(columnList.at(i)));
             t.head.append(row);
         }
     }
-    else{
-        t.setWrong(true);
-        return t;
-    }
-
-    if(!condtion.isEmpty()){
-        if(condtion.dequeue()=="where"){
-            QString column = condtion.dequeue();
-            QString judge = condtion.dequeue();
-            QString cond = condtion.dequeue();
-            QVector<int> temp = FindAllData(column,judge,cond);
-            for(int i=0;i<temp.size();i++){
-                QVector<QString> row;
-                for(int j=0;j<t.head.size();j++){
-                    row.append(data.at(temp.at(i)).at(getFieldIndex(t.head[j].get_name())));
-                }
-                t.data.append(row);
-            }
-            return t;
-        }
-    }
-    else{
-        for(int i=0;i<data.size();i++){
-             QVector<QString> row;
-            for(int j=0;j<t.head.size();j++){
-                row.append(data.at(i).at(getFieldIndex(t.head[j].get_name())));
-            }
-            t.data.append(row);
-        }
-        return t;
-    }
-    t.setWrong(true);
     return t;
+//    if(columnList=="*"){
+//        for(int i=0;i<head.size();i++){
+//            field row;
+//            row.set_name(head[i].get_name());
+//            row.set_dataType(head[i].get_dataType());
+//            t.head.append(row);
+//        }
+//    }
+//    else if(!columnList.isEmpty()){
+//        QStringList list = columnList.split(",");
+//        for(int i=0;i<list.size();i++){
+//            field row;
+//            //存在未知字段
+//            if(getFieldIndex(list.at(i))==-1){
+//                t.setWrong(true);
+//                return t;
+//            }
+//            row.set_name(list.at(i));
+//            row.set_dataType(getFieldType(list.at(i)));
+//            t.head.append(row);
+//        }
+//    }
+//    else{
+//        t.setWrong(true);
+//        return t;
+//    }
+
+//    if(!condtion.isEmpty()){
+//        if(condtion.dequeue()=="where"){
+//            QString column = condtion.dequeue();
+//            QString judge = condtion.dequeue();
+//            QString cond = condtion.dequeue();
+//            QVector<int> temp = FindAllData(column,judge,cond);
+//            for(int i=0;i<temp.size();i++){
+//                QVector<QString> row;
+//                for(int j=0;j<t.head.size();j++){
+//                    row.append(data.at(temp.at(i)).at(getFieldIndex(t.head[j].get_name())));
+//                }
+//                t.data.append(row);
+//            }
+//            return t;
+//        }
+//    }
+//    else{
+//        for(int i=0;i<data.size();i++){
+//             QVector<QString> row;
+//            for(int j=0;j<t.head.size();j++){
+//                row.append(data.at(i).at(getFieldIndex(t.head[j].get_name())));
+//            }
+//            t.data.append(row);
+//        }
+//        return t;
+//    }
+//    t.setWrong(true);
+//    return t;
 }
 int Table::getFieldIndex(QString name){
     for(int i=0;i<head.size();i++){
@@ -281,6 +268,9 @@ Table Table::Cartesian(Table t){
     QString sameFieldName;
     int id=-1;
     //添加字段
+    if(newT.tableName.isEmpty()){
+        newT.tableName=t.getTableName();
+    }
     for(int i=0;i<t.getHead().size();i++){
         id = getFieldIndex(t.getHead()[i].get_name());
         //具有相同字段时加前缀 table.field
@@ -290,30 +280,120 @@ Table Table::Cartesian(Table t){
             newName.append(t.getTableName());
             newName.append(".");
             newName.append(sameFieldName);
-            t.getHead()[i].set_name(newName);
+            t.head[i].set_name(newName);
             newName.clear();
-            newName.append(head[id].get_name());
+            newName.append(tableName);
             newName.append(".");
             newName.append(sameFieldName);
-            head[id].set_name(tableName+head[id].get_name());
+            head[id].set_name(newName);
         }
-        newT.getHead().append(t.getHead()[i]);
+        //newT.head.append(t.getHead()[i]);
     }
     //添加字段
     for(int i=0;i<getHead().size();i++){
-      newT.getHead().append(getHead()[i]);
+      newT.head.append(getHead()[i]);
+    }
+    for(int i=0;i<t.getHead().size();i++){
+        newT.head.append(t.getHead()[i]);
     }
     //添加数据
-    for(int i=0;i<t.getData().size();i++){
+    if(getData().size()==0){
+        for(int j=0;j<t.getData().size();j++){
+            QVector<QString> row;
+            row.append(t.getData()[j]);
+            newT.data.append(row);
+        }
+    }
+    else if(t.getData().size()==0){
         for(int j=0;j<getData().size();j++){
             QVector<QString> row;
-            row.append(t.getData()[i]);
             row.append(getData()[j]);
-            newT.getData().append(row);
+            newT.data.append(row);
+        }
+    }
+    else{
+        for(int i=0;i<getData().size();i++){
+            for(int j=0;j<t.getData().size();j++){
+                QVector<QString> row;
+                row.append(getData()[i]);
+                row.append(t.getData()[j]);
+                newT.data.append(row);
+            }
         }
     }
     return newT;
 }
 QString Table::getTableName(){
     return tableName;
+}
+QVector<int> Table::getWhere(QStringList judgeList){
+    QString temp;
+    QRegularExpression re("([A-Za-z_\\.]+)\\s?(>|<|>=|<=|!=|=)\\s?([\\w\\.]+)");
+    QRegularExpressionMatch match;
+    QString column;
+    QString judge;
+    QString value;
+    QVector<int> OR;
+    // or判断
+    for(int i=0;i<judgeList.size();i++){
+        temp=judgeList[i];
+        QVector<int> AND;
+        // and 判断
+        if(temp.contains(" and ")){
+            QStringList AndList = temp.split(" and ");
+            for(int i=0;i<AndList.size();i++){
+                QVector<int> tem;
+                match = re.match(AndList[i]);
+                if(match.hasMatch())
+                {
+                    column = match.captured(1);
+                    judge=match.captured(2);
+                    value = match.captured(3);
+                    //判断字段是否存在
+                    if(getFieldIndex(column)==-1){
+                        throw QString("出现未知字段");
+                    }
+                    tem = FindAllData(column,judge,value);
+                    if(i==0){
+                      AND=tem;
+                    }
+                    else{
+                        //交集
+                        QVector<int> temAND;
+                        std::sort(tem.begin(),tem.end());
+                        std::sort(AND.begin(),AND.end());
+                        std::set_intersection(AND.begin(),AND.end(),tem.begin(),tem.end(),std::back_inserter(temAND));
+                        AND = temAND;
+                    }
+                }
+                else {
+                    AND.clear();
+                }
+            }
+            //并集
+            QVector<int> ORAND;
+            std::sort(OR.begin(),OR.end());
+            std::sort(AND.begin(),AND.end());
+            std::set_union(AND.begin(),AND.end(),OR.begin(),OR.end(),std::back_inserter(ORAND));
+            OR = ORAND;
+        }
+        else{
+            QVector<int> tem;
+            match = re.match(temp);
+            if(match.hasMatch())
+            {
+                column = match.captured(1);
+                judge=match.captured(2);
+                value = match.captured(3);
+                tem = FindAllData(column,judge,value);
+            }
+            //做并集
+            QVector<int> temOR;
+            std::sort(OR.begin(),OR.end());
+            std::sort(tem.begin(),tem.end());
+            std::set_union(tem.begin(),tem.end(),OR.begin(),OR.end(),std::back_inserter(temOR));
+            OR = temOR;
+        }
+    }
+    return OR;
 }
