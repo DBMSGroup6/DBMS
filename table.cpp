@@ -47,9 +47,11 @@ bool Table::readData(){
         QVector<QString> row;
         QByteArray line = f.readLine();
         QString str(line);
-        str = str.simplified();
+        //str = str.simplified();
+        //str.remove(" ");
         QStringList list = str.split(",");
         for(int i=0;i<list.size();i++){
+            if(list[i]!="\n")
             row.append(list.at(i));
         }
         data.append(row);
@@ -104,13 +106,15 @@ QVector<int> Table::FindAllData(QString column, QString judge, QString condtion)
     if(order==-1){
         throw QString("未知的字段"+column);
     }
-    qDebug()<<condtion;
+    //qDebug()<<condtion;
     int order2 = getFieldIndex(condtion);
-    qDebug()<<"order2:"<<order2;
+   // qDebug()<<"order2:"<<order2;
+
     for(int j=0;j<data.size();j++){
         if(order2!=-1){
-            condtion = data.at(j).at(order2);
-//            qDebug()<<"111:"<<condtion;
+            condtion = data[j].at(order2);
+            //qDebug()<<"111:"<<condtion;
+            //qDebug()<<"222"<<data[j][order2];
         }
         if(judge==">="){
             if(data.at(j).at(order)>=condtion){
@@ -165,87 +169,6 @@ bool Table::UpdateOneData(int id, QString column, QString value){
     data[id][order]=value;
     return true;
 }
-Table Table::SelectData(QStringList columnList,QStringList groupList,QStringList orderList){
-    Table t;
-    //全参
-    if(columnList[0]=="*"){
-        for(int i=0;i<getHead().size();i++){
-            field row;
-            row.set_name(getHead()[i].get_name());
-            row.set_dataType(getHead()[i].get_dataType());
-            t.head.append(row);
-        }
-    }
-    //部分参
-    else{
-        for(int i=0;i<columnList.size();i++){
-            field row;
-            //存在未知字段
-            if(getFieldIndex(columnList.at(i))==-1){
-                throw QString("存在未知字段"+columnList.at(i));
-            }
-            row.set_name(columnList.at(i));
-            row.set_dataType(getFieldType(columnList.at(i)));
-            t.head.append(row);
-        }
-    }
-    return t;
-//    if(columnList=="*"){
-//        for(int i=0;i<head.size();i++){
-//            field row;
-//            row.set_name(head[i].get_name());
-//            row.set_dataType(head[i].get_dataType());
-//            t.head.append(row);
-//        }
-//    }
-//    else if(!columnList.isEmpty()){
-//        QStringList list = columnList.split(",");
-//        for(int i=0;i<list.size();i++){
-//            field row;
-//            //存在未知字段
-//            if(getFieldIndex(list.at(i))==-1){
-//                t.setWrong(true);
-//                return t;
-//            }
-//            row.set_name(list.at(i));
-//            row.set_dataType(getFieldType(list.at(i)));
-//            t.head.append(row);
-//        }
-//    }
-//    else{
-//        t.setWrong(true);
-//        return t;
-//    }
-
-//    if(!condtion.isEmpty()){
-//        if(condtion.dequeue()=="where"){
-//            QString column = condtion.dequeue();
-//            QString judge = condtion.dequeue();
-//            QString cond = condtion.dequeue();
-//            QVector<int> temp = FindAllData(column,judge,cond);
-//            for(int i=0;i<temp.size();i++){
-//                QVector<QString> row;
-//                for(int j=0;j<t.head.size();j++){
-//                    row.append(data.at(temp.at(i)).at(getFieldIndex(t.head[j].get_name())));
-//                }
-//                t.data.append(row);
-//            }
-//            return t;
-//        }
-//    }
-//    else{
-//        for(int i=0;i<data.size();i++){
-//             QVector<QString> row;
-//            for(int j=0;j<t.head.size();j++){
-//                row.append(data.at(i).at(getFieldIndex(t.head[j].get_name())));
-//            }
-//            t.data.append(row);
-//        }
-//        return t;
-//    }
-//    t.setWrong(true);
-//    return t;
-}
 int Table::getFieldIndex(QString name){
     for(int i=0;i<head.size();i++){
         if(head[i].get_name()==name){
@@ -260,6 +183,7 @@ QString Table::getFieldType(QString name){
             return head[i].get_dataType();
         }
     }
+    throw QString("未知的字段"+name);
     return "";
 }
 //得到两个表的笛卡尔积
@@ -337,6 +261,7 @@ QVector<int> Table::getWhere(QStringList judgeList){
     // or判断
     for(int i=0;i<judgeList.size();i++){
         temp=judgeList[i];
+        qDebug()<<"temp"<<temp;
         QVector<int> AND;
         // and 判断
         if(temp.contains(" and ")){
@@ -385,7 +310,11 @@ QVector<int> Table::getWhere(QStringList judgeList){
                 column = match.captured(1);
                 judge=match.captured(2);
                 value = match.captured(3);
+                qDebug()<<"column"<<column;
                 tem = FindAllData(column,judge,value);
+            }
+            else{
+                throw QString("匹配失败");
             }
             //做并集
             QVector<int> temOR;
@@ -396,4 +325,53 @@ QVector<int> Table::getWhere(QStringList judgeList){
         }
     }
     return OR;
+}
+Table Table::groupBy(QStringList groupList){
+
+}
+Table Table::orderBy(QStringList orderList, bool desc){
+
+}
+Table Table::SelectData(QStringList columnList,QStringList groupList,QStringList orderList,bool desc){
+    Table t;
+    //全参
+    if(columnList[0]=="*"){
+        for(int i=0;i<getHead().size();i++){
+            field row;
+            row.set_name(getHead()[i].get_name());
+            row.set_dataType(getHead()[i].get_dataType());
+            t.head.append(row);
+        }
+    }
+    //部分参
+    else{
+        for(int i=0;i<columnList.size();i++){
+            field row;
+            //存在未知字段
+            if(getFieldIndex(columnList.at(i))==-1){
+                throw QString("存在未知字段"+columnList.at(i));
+            }
+            row.set_name(columnList.at(i));
+            row.set_dataType(getFieldType(columnList.at(i)));
+            t.head.append(row);
+        }
+    }
+    qDebug()<<"datasize"<<getData().size();
+    for(int i=0;i<getData().size();i++){
+        QVector<QString> row;
+        for(int j=0;j<getData()[i].size();j++){
+            if(t.getFieldIndex(getHead()[j].get_name())!=-1){
+                row.append(getData()[i][j]);
+                qDebug()<<i<<j<<getData()[i][j];
+            }
+        }
+        t.data.append(row);
+    }
+    if(!groupList.isEmpty()){
+        t=t.groupBy(groupList);
+    }
+    if(!orderList.isEmpty()){
+        t=t.orderBy(orderList,desc);
+    }
+    return t;
 }

@@ -301,7 +301,8 @@ bool DataManage::Select(QString database,QString sql){
                 table = match.captured(2);
                 tableList = table.split(",");
                 columnList = column.split(",");
-                t = dao.selectDao(tableList,columnList,judgeList,groupList,orderList);
+                t = dao.selectDao(tableList,columnList,judgeList,groupList,orderList,desc);
+                //将表输出
                 QString row;
                 for(int i=0;i<t.getHead().size();i++){
                     row.append(t.getHead()[i].get_name());
@@ -309,7 +310,7 @@ bool DataManage::Select(QString database,QString sql){
                 }
                 ui->outputText->append(row);
                 row.clear();
-                //qDebug()<<t.getData().size();
+                qDebug()<<t.getData().size();
                 for(int i=0;i<t.getData().size();i++){
                     for(int j=0;j<t.getData()[i].size();j++){
                         row.append(t.getData()[i][j]);

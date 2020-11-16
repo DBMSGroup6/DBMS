@@ -95,32 +95,33 @@ bool dmDao::updateDao(QString tableName, QString column1,QString value1,QStringL
     }
      return false;
 }
-Table dmDao::selectDao(QStringList tableList, QStringList columnList, QStringList judgeList,QStringList groupList,QStringList orderList){
+Table dmDao::selectDao(QStringList tableList, QStringList columnList, QStringList judgeList,QStringList groupList,QStringList orderList,bool desc){
     try{
         Table all;//总表
         //暂不考虑子查询
         for(int i=0;i<tableList.size();i++){
             //qDebug()<<tableList[i];
             Table temp(tableList[i]);
+            //qDebug()<<"tempsize"<<temp.getData()[0].size();
             all = all.Cartesian(temp);
-            //qDebug()<<all.getHead().size();
+            //qDebug()<<"size"<<all.getData()[0].size();
         }
         if(!judgeList.isEmpty()){
              QVector<int> where = all.getWhere(judgeList);
-    //        qDebug()<<OR.size();
+            //qDebug()<<"where"<<where.size();
             //只保留符合where条件的数据
             QVector<QVector<QString>> newData;
             for(int i=0;i<all.getData().size();i++){
                 if(where.contains(i)){
                     newData.append(all.getData()[i]);
-                    qDebug()<<i;
+                    //qDebug()<<i;
                 }
             }
             all.setData(newData);
         }
+        return all.SelectData(columnList,groupList,orderList,desc);
     }catch(QString exception){
-        throw WString(exception);
+        throw QString(exception);
     }
-    return all;//.SelectData(columnList,groupList,orderList);
-    //return all.SelectData(columnList,groupList,orderList);
+    //return all.SelectData(columnList,groupList,orderList,desc);
 }
