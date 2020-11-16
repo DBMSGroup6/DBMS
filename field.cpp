@@ -28,6 +28,10 @@ void field::set_notNull(QString notNull){
     this->notNull = notNull;
 }
 
+void field::set_defaultValue(QString defaultValue){
+    this->defaultValue = defaultValue;
+}
+
 void field::set_checkUP(QString checkUP){
     this->checkUP = checkUP;
 }
@@ -70,6 +74,10 @@ QString field::get_notNull(){
     return this->notNull;
 }
 
+QString field::get_defaultValue(){
+    return this->defaultValue;
+}
+
 QString field::get_checkUP(){
     return this->checkUP;
 }
@@ -87,3 +95,27 @@ QString field::get_deleteLimit(){
 }
 
 /*********************************************/
+
+void field::refresh_field(){
+    name = "FALSE";//名称
+    dataType = "FALSE";//数据类型
+
+    PK = "FALSE";//主键------表级
+    unique = "FALSE";//唯一
+    notNull = "FALSE";//非空
+
+    checkUP = "FALSE";//check上限
+    checkDown = "FALSE";//check下限
+
+    FK_tableName = "FALSE";//外键引用表名---表级
+    deleteLimit = "RESTRICT";//删除约束
+}
+
+
+
+
+
+
+
+
+
